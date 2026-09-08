@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f97316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Самокат">
+<title>Самокат-Финдер</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #f4f4f6; color: #222;
+    padding: 16px; min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  h1 { font-size: 22px; margin-bottom: 16px; }
+  .preview-box {
+    width: 100%; aspect-ratio: 4/3;
+    background: #000; border-radius: 12px;
+    overflow: hidden; display: flex;
+    align-items: center; justify-content: center;
+    color: #888; margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .preview-box img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .buttons { display: flex; gap: 8px; margin-bottom: 16px; }
+  button, .file-btn {
+    flex: 1; padding: 14px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: #2e7cff; color: white; }
+  .btn-secondary { background: #e5e7eb; color: #222; }
+  .file-btn {
+    background: #fff; border: 1px solid #d1d5db;
+    text-align: center; display: block;
+  }
+  input[type="file"] { display: none; }
+  label.field { display: block; font-size: 13px; color: #555; margin-bottom: 4px; margin-top: 8px; }
+  input[type="text"] {
+    width: 100%; padding: 12px; border: 1px solid #d1d5db;
+    border-radius: 10px; font-size: 15px; margin-bottom: 4px;
+    background: white;
+  }
+  .hint { font-size: 12px; color: #777; margin-bottom: 16px; }
+  .send-btn {
+    width: 100%; padding: 16px; background: #2e7cff; color: white;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+  }
+  .send-btn:disabled { background: #93c5fd; }
+  #status { margin-top: 12px; font-size: 14px; text-align: center; }
+  .ok { color: #16a34a; } .err { color: #dc2626; }
+  .install-hint {
+    background: #fef3c7; border: 1px solid #fbbf24;
+    padding: 10px; border-radius: 8px; font-size: 13px;
+    margin-bottom: 12px; color: #92400e;
+  }
+</style>
+</head>
+<body>
+
+<div class="install-hint" id="installHint" style="display:none;">
+  💡 Чтобы установить как приложение: меню Chrome → «Добавить на главный экран»
+</div>
+
+<h1>🛴 Нашёл самокат?</h1>
+
+<div class="preview-box" id="preview">Здесь появится фото</div>
+
+<div class="buttons">
+  <label class="file-btn" for="cameraInput"> Сфоткать</label>
+  <label class="file-btn" for="fileInput"> Из галереи</label>
+</div>
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment">
+<input type="file" id="fileInput" accept="image/*">
+
+<label class="field" for="street">Название улицы:</label>
+<input type="text" id="street" placeholder="Например: ул. Ленина, 15">
+<div class="hint">(рядом с которой обнаружен самокат)</div>
+
+<button class="send-btn" id="sendBtn">Отправить</button>
+<button class="btn-secondary" id="retakeBtn" style="margin-top:8px; width:100%;">Переснять</button>
+
+<div id="status"></div>
+
+<script>
+// ===== ВСТАВЬ СЮДА СВОИ ДАННЫЕ =====
+const BOT_TOKEN = '8803648566:AAHmG4XTMTDqfIHlWjBeDsKCGmQ18pxKnGQ';
+const CHAT_ID   = '7929131842';
+// ===================================
+
+const preview    = document.getElementById('preview');
+const cameraIn   = document.getElementById('cameraInput');
+const fileIn     = document.getElementById('fileInput');
+const streetIn   = document.getElementById('street');
+const sendBtn    = document.getElementById('sendBtn');
+const retakeBtn  = document.getElementById('retakeBtn');
+const status     = document.getElementById('status');
+const installHint = document.getElementById('installHint');
+
+let currentFile = null;
+
+// Показать подсказку об установке
+if (!window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone) {
+  installHint.style.display = 'block';
+}
+
+function showPreview(file) {
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.innerHTML = `<img src="${e.target.result}">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPreview() {
+  currentFile = null;
+  preview.innerHTML = 'Здесь появится фото';
+  cameraIn.value = ''; fileIn.value = '';
+  status.textContent = '';
+}
+
+cameraIn.addEventListener('change', e => {
+  if (e.target.files[0]) showPreview(e.target.files[0]);
+});
+fileIn.addEventListener('change', e => {
+  if (e.target.files[0]) showPreview(e.target.files[0]);
+});
+
+retakeBtn.addEventListener('click', clearPreview);
+
+sendBtn.addEventListener('click', async () => {
+  status.className = '';
+  if (!currentFile) { status.textContent = '⚠️ Сначала сделай фото'; status.className='err'; return; }
+  if (!streetIn.value.trim()) { status.textContent = '️ Укажи улицу'; status.className='err'; return; }
+
+  sendBtn.disabled = true;
+  status.textContent = 'Отправляем...';
+
+  try {
+    const fd = new FormData();
+    fd.append('chat_id', CHAT_ID);
+    fd.append('photo', currentFile);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
+
+    const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: 'POST', body: fd
+    });
+    const j1 = await r1.json();
+    if (!j1.ok) throw new Error(j1.description || 'Ошибка отправки фото');
+
+    const r2 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: ` Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+      })
+    });
+    const j2 = await r2.json();
+    if (!j2.ok) throw new Error(j2.description);
+
+    status.textContent = '✅ Отправлено! Спасибо';
+    status.className = 'ok';
+    clearPreview();
+    streetIn.value = '';
+  } catch (err) {
+    status.textContent = '❌ ' + err.message;
+    status.className = 'err';
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+
+// Регистрация service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('SW зарегистрирован'))
+    .catch(err => console.log('SW ошибка:', err));
+}
+</script>
+</body>
+</html>
