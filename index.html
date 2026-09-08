@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#f97316">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Самокат">
-<title>Самокат-Финдер</title>
+<meta name="apple-mobile-web-app-title" content="Поиск Самокатов">
+<title>Поиск Самокатов</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
@@ -76,8 +76,8 @@
 <div class="preview-box" id="preview">Здесь появится фото</div>
 
 <div class="buttons">
-  <label class="file-btn" for="cameraInput"> Сфоткать</label>
-  <label class="file-btn" for="fileInput"> Из галереи</label>
+  <label class="file-btn" for="cameraInput">📷 Сфоткать</label>
+  <label class="file-btn" for="fileInput">🖼 Из галереи</label>
 </div>
 
 <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -141,7 +141,7 @@ retakeBtn.addEventListener('click', clearPreview);
 
 sendBtn.addEventListener('click', async () => {
   status.className = '';
-  if (!currentFile) { status.textContent = '⚠️ Сначала сделай фото'; status.className='err'; return; }
+  if (!currentFile) { status.textContent = '️ Сначала сделай фото'; status.className='err'; return; }
   if (!streetIn.value.trim()) { status.textContent = '️ Укажи улицу'; status.className='err'; return; }
 
   sendBtn.disabled = true;
@@ -151,7 +151,7 @@ sendBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('chat_id', CHAT_ID);
     fd.append('photo', currentFile);
-    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`);
 
     const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST', body: fd
@@ -164,7 +164,7 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: ` Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();

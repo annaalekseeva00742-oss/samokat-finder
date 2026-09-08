@@ -1,7 +1,7 @@
 {
-  "name": "Самокат-Финдер",
-  "short_name": "Самокат",
-  "description": "Приложение для фиксации самокатов",
+  "name": "Поиск Самокатов",
+  "short_name": "Самокаты",
+  "description": "Приложение для отправки фото найденных самокатов",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f4f6",
