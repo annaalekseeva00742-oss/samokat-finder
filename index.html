@@ -36,12 +36,6 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: #E0E0E0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #999;
   }
 
   .profile-name {
@@ -62,7 +56,8 @@
   }
 
   .scooter-icon {
-    font-size: 32px;
+    width: 32px;
+    height: 32px;
   }
 
   .scooter-title {
@@ -91,12 +86,6 @@
   .rewards-star {
     width: 32px;
     height: 32px;
-    background: #FFD700;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
   }
 
   .rewards-text {
@@ -133,7 +122,7 @@
     font-size: 18px;
   }
 
-  .photo-card img {
+  .photo-card img.photo-preview {
     width: 100%;
     border-radius: 12px;
     object-fit: cover;
@@ -169,17 +158,12 @@
   .action-icon {
     width: 36px;
     height: 36px;
-    background: #F0F0F0;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
+    object-fit: contain;
   }
 
   .action-arrow {
     color: #999;
-    font-size: 18px;
+    font-size: 20px;
   }
 
   /* Поле ввода улицы */
@@ -290,12 +274,7 @@
   .logout-icon {
     width: 36px;
     height: 36px;
-    background: #F0F0F0;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
+    object-fit: contain;
   }
 
   #status {
@@ -311,20 +290,20 @@
 
 <!-- Профиль -->
 <div class="profile-section">
-  <div class="profile-avatar">👤</div>
+  <img src="icons/logoprofil.png" alt="Профиль" class="profile-avatar">
   <div class="profile-name">Андрей</div>
 </div>
 
 <!-- Заголовок с самокатом -->
 <div class="scooter-header">
-  <div class="scooter-icon">🛴</div>
+  <img src="icons/logosamokat.png" alt="Самокат" class="scooter-icon">
   <div class="scooter-title">Нашёл Самокат ?</div>
 </div>
 
 <!-- Баллы -->
 <div class="rewards-card">
   <div class="rewards-content">
-    <div class="rewards-star">★</div>
+    <img src="icons/star.png" alt="Звезда" class="rewards-star">
     <div>
       <div class="rewards-text">100</div>
       <div class="rewards-subtext">Баллы = Рубли</div>
@@ -336,13 +315,13 @@
 <!-- Карточка для фото -->
 <div class="photo-card" id="photoCard">
   <div class="photo-placeholder" id="photoPlaceholder">Здесь появится фото</div>
-  <img id="photoPreview" style="display: none;">
+  <img id="photoPreview" class="photo-preview" style="display: none;">
 </div>
 
 <!-- Кнопки действий -->
 <button class="action-button" onclick="document.getElementById('cameraInput').click()">
   <div class="action-button-content">
-    <div class="action-icon">📷</div>
+    <img src="icons/camera.png" alt="Камера" class="action-icon">
     <span>Сфотографировать</span>
   </div>
   <div class="action-arrow">›</div>
@@ -350,7 +329,7 @@
 
 <button class="action-button" onclick="document.getElementById('fileInput').click()">
   <div class="action-button-content">
-    <div class="action-icon">🖼</div>
+    <img src="icons/gallery.png" alt="Галерея" class="action-icon">
     <span>Загрузить из галереи</span>
   </div>
   <div class="action-arrow">›</div>
@@ -379,7 +358,7 @@
 
 <!-- Кнопка выход -->
 <button class="logout-btn">
-  <div class="logout-icon">→</div>
+  <img src="icons/logout.png" alt="Выход" class="logout-icon">
   <span>Выход</span>
 </button>
 
@@ -437,12 +416,12 @@ retakeBtn.addEventListener('click', clearPreview);
 sendBtn.addEventListener('click', async () => {
   status.className = '';
   if (!currentFile) { 
-    status.textContent = '⚠️ Сначала сделайте фото'; 
+    status.textContent = 'Сначала сделайте фото'; 
     status.className='err'; 
     return; 
   }
   if (!streetIn.value.trim()) { 
-    status.textContent = '⚠️ Укажите улицу'; 
+    status.textContent = 'Укажите улицу'; 
     status.className='err'; 
     return; 
   }
@@ -454,7 +433,7 @@ sendBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('chat_id', CHAT_ID);
     fd.append('photo', currentFile);
-    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
 
     const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST', 
@@ -468,18 +447,18 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`
+        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();
     if (!j2.ok) throw new Error(j2.description);
 
-    status.textContent = '✅ Отправлено! Спасибо';
+    status.textContent = 'Отправлено! Спасибо';
     status.className = 'ok';
     clearPreview();
     streetIn.value = '';
   } catch (err) {
-    status.textContent = ' ' + err.message;
+    status.textContent = 'Ошибка: ' + err.message;
     status.className = 'err';
   } finally {
     sendBtn.disabled = false;
