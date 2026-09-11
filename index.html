@@ -179,6 +179,12 @@
     font-size: 17px;
     font-weight: 500;
     color: #000;
+    margin-bottom: 4px;
+  }
+
+  .street-sublabel {
+    font-size: 13px;
+    color: #999;
     margin-bottom: 12px;
   }
 
@@ -335,6 +341,7 @@
 <!-- Поле ввода улицы -->
 <div class="street-section">
   <label class="street-label">Название улицы:</label>
+  <div class="street-sublabel">(рядом с которой обнаружен самокат)</div>
   <input type="text" class="street-input" id="street" placeholder="Например: ул. Ленина, 15">
 </div>
 
@@ -472,13 +479,10 @@ sendBtn.addEventListener('click', async () => {
 
 // Кнопка "Выход" - закрывает приложение
 logoutBtn.addEventListener('click', () => {
-  // Для PWA и WebView
   if (navigator.app) {
     navigator.app.exitApp();
   } else {
-    // Для браузера - закрываем вкладку
     window.close();
-    // Если не закрылось - показываем сообщение
     setTimeout(() => {
       alert('Закройте вкладку браузера для выхода из приложения');
     }, 100);
