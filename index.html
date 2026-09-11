@@ -141,6 +141,7 @@
     border: none;
     width: 100%;
     font-size: 17px;
+    font-weight: 500;
     color: #000;
     transition: background 0.2s;
   }
@@ -178,12 +179,6 @@
     font-size: 17px;
     font-weight: 500;
     color: #000;
-    margin-bottom: 4px;
-  }
-
-  .street-sublabel {
-    font-size: 13px;
-    color: #999;
     margin-bottom: 12px;
   }
 
@@ -195,22 +190,12 @@
     font-size: 16px;
     background: #FAFAFA;
     outline: none;
+    transition: all 0.2s;
   }
 
   .street-input:focus {
     border-color: #FFCC00;
     background: #FFFFFF;
-  }
-
-  /* Информационный блок */
-  .info-box {
-    background: #F5F5F5;
-    padding: 12px 16px;
-    border-radius: 10px;
-    margin-top: 12px;
-    font-size: 13px;
-    color: #666;
-    line-height: 1.5;
   }
 
   /* Кнопка отправить */
@@ -240,7 +225,7 @@
 
   /* Кнопка переснять */
   .retake-btn {
-    background: #F0F0F0;
+    background: #f1f0ed;
     color: #000;
     border: none;
     padding: 16px 20px;
@@ -254,26 +239,35 @@
   }
 
   .retake-btn:active {
-    background: #E0E0E0;
+    background: #e5e4e0;
   }
 
   /* Кнопка выход */
   .logout-btn {
+    background: #FFFFFF;
+    padding: 18px 20px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
-    padding: 16px 20px;
-    background: transparent;
-    border: none;
     cursor: pointer;
-    font-size: 16px;
-    color: #000;
+    border: none;
     width: 100%;
+    font-size: 17px;
+    font-weight: 500;
+    color: #000;
+    transition: background 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .logout-btn:active {
+    background: #F0F0F0;
   }
 
   .logout-icon {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     object-fit: contain;
   }
 
@@ -319,7 +313,7 @@
 </div>
 
 <!-- Кнопки действий -->
-<button class="action-button" onclick="document.getElementById('cameraInput').click()">
+<button class="action-button" id="cameraBtn">
   <div class="action-button-content">
     <img src="icons/camera.png" alt="Камера" class="action-icon">
     <span>Сфотографировать</span>
@@ -327,7 +321,7 @@
   <div class="action-arrow">›</div>
 </button>
 
-<button class="action-button" onclick="document.getElementById('fileInput').click()">
+<button class="action-button" id="galleryBtn">
   <div class="action-button-content">
     <img src="icons/gallery.png" alt="Галерея" class="action-icon">
     <span>Загрузить из галереи</span>
@@ -341,13 +335,7 @@
 <!-- Поле ввода улицы -->
 <div class="street-section">
   <label class="street-label">Название улицы:</label>
-  <div class="street-sublabel">(рядом с которой обнаружен самокат)</div>
   <input type="text" class="street-input" id="street" placeholder="Например: ул. Ленина, 15">
-  
-  <div class="info-box">
-    кликабельное поле нажав можно вводить комментарий<br>
-    этот текст в интерфейс не добавил я просто объясняю что тут будет
-  </div>
 </div>
 
 <!-- Кнопка отправить -->
@@ -357,7 +345,7 @@
 <button class="retake-btn" id="retakeBtn">Переснять</button>
 
 <!-- Кнопка выход -->
-<button class="logout-btn">
+<button class="logout-btn" id="logoutBtn">
   <img src="icons/logout.png" alt="Выход" class="logout-icon">
   <span>Выход</span>
 </button>
@@ -373,11 +361,14 @@ const CHAT_ID   = '7929131842';
 const photoCard = document.getElementById('photoCard');
 const photoPlaceholder = document.getElementById('photoPlaceholder');
 const photoPreview = document.getElementById('photoPreview');
+const cameraBtn = document.getElementById('cameraBtn');
+const galleryBtn = document.getElementById('galleryBtn');
 const cameraIn = document.getElementById('cameraInput');
 const fileIn = document.getElementById('fileInput');
 const streetIn = document.getElementById('street');
 const sendBtn = document.getElementById('sendBtn');
 const retakeBtn = document.getElementById('retakeBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 const status = document.getElementById('status');
 
 let currentFile = null;
@@ -403,16 +394,30 @@ function clearPreview() {
   status.textContent = '';
 }
 
+// Кнопка "Сфотографировать"
+cameraBtn.addEventListener('click', () => {
+  cameraIn.click();
+});
+
+// Кнопка "Загрузить из галереи"
+galleryBtn.addEventListener('click', () => {
+  fileIn.click();
+});
+
+// Выбор файла с камеры
 cameraIn.addEventListener('change', e => {
   if (e.target.files[0]) showPreview(e.target.files[0]);
 });
 
+// Выбор файла из галереи
 fileIn.addEventListener('change', e => {
   if (e.target.files[0]) showPreview(e.target.files[0]);
 });
 
+// Кнопка "Переснять"
 retakeBtn.addEventListener('click', clearPreview);
 
+// Кнопка "Отправить"
 sendBtn.addEventListener('click', async () => {
   status.className = '';
   if (!currentFile) { 
@@ -462,6 +467,21 @@ sendBtn.addEventListener('click', async () => {
     status.className = 'err';
   } finally {
     sendBtn.disabled = false;
+  }
+});
+
+// Кнопка "Выход" - закрывает приложение
+logoutBtn.addEventListener('click', () => {
+  // Для PWA и WebView
+  if (navigator.app) {
+    navigator.app.exitApp();
+  } else {
+    // Для браузера - закрываем вкладку
+    window.close();
+    // Если не закрылось - показываем сообщение
+    setTimeout(() => {
+      alert('Закройте вкладку браузера для выхода из приложения');
+    }, 100);
   }
 });
 </script>
