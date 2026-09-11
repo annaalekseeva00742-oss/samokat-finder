@@ -179,7 +179,7 @@
     font-size: 17px;
     font-weight: 500;
     color: #000;
-    margin-bottom: 8px;
+    margin-bottom: 16px;
   }
 
   .street-sublabel {
@@ -190,18 +190,19 @@
 
   .street-input {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #E0E0E0;
+    padding: 16px;
+    border: none;
     border-radius: 12px;
     font-size: 16px;
     background: #F5F5F5;
     outline: none;
     transition: all 0.2s;
-    height: 48px;
+    height: 96px;
+    resize: none;
   }
 
   .street-input:focus {
-    border-color: #FFCC00;
+    border: 2px solid #FFCC00;
     background: #FFFFFF;
   }
 
@@ -253,15 +254,14 @@
     background: #e5e4e0;
   }
 
-  /* Кнопка выход */
+  /* Кнопка выход - как action-button */
   .logout-btn {
     background: #FFFFFF;
     padding: 18px 20px;
     border-radius: 16px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
+    justify-content: space-between;
     cursor: pointer;
     border: none;
     width: 100%;
@@ -276,10 +276,31 @@
     background: #F0F0F0;
   }
 
+  .logout-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logout-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: #F0F0F0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .logout-icon {
-    width: 36px;
-    height: 36px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
+  }
+
+  .logout-arrow {
+    color: #999;
+    font-size: 20px;
   }
 
   #status {
@@ -358,8 +379,13 @@
 
 <!-- Кнопка выход -->
 <button class="logout-btn" id="logoutBtn">
-  <img src="icons/logout.png" alt="Выход" class="logout-icon">
-  <span>Выход</span>
+  <div class="logout-btn-content">
+    <div class="logout-icon-wrapper">
+      <img src="icons/logout.png" alt="Выход" class="logout-icon">
+    </div>
+    <span>Выход</span>
+  </div>
+  <div class="logout-arrow">›</div>
 </button>
 
 <div id="status"></div>
