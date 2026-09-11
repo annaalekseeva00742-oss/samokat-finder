@@ -39,7 +39,7 @@
   }
 
   .profile-name {
-    font-size: 27px;
+    font-size: 25px;
     font-weight: 700;
     color: #000;
   }
@@ -102,30 +102,6 @@
   .rewards-arrow {
     color: #999;
     font-size: 20px;
-  }
-
-  /* Карточка для фото */
-  .photo-card {
-    background: #FFFFFF;
-    border-radius: 16px;
-    padding: 40px 20px;
-    margin-bottom: 16px;
-    min-height: 280px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .photo-placeholder {
-    color: #999;
-    font-size: 15px;
-  }
-
-  .photo-card img.photo-preview {
-    width: 100%;
-    border-radius: 12px;
-    object-fit: cover;
   }
 
   /* Кнопки действий */
@@ -201,16 +177,15 @@
   .street-input {
     width: 100%;
     padding: 16px;
-    padding-top: 12px;
     border: none;
     border-radius: 12px;
     font-size: 16px;
     background: #F5F5F5;
     outline: none;
     transition: all 0.2s;
-    height: 96px;
-    text-align: left;
-    vertical-align: top;
+    min-height: 96px; /* Высота поля */
+    resize: none; /* Запрет на растягивание пользователем */
+    display: block;
   }
 
   .street-input:focus {
@@ -220,8 +195,31 @@
 
   .street-input::placeholder {
     color: #999;
-    position: relative;
-    top: 0;
+    /* В textarea placeholder автоматически прижимается к верху */
+  }
+
+  /* Карточка для фото (изначально скрыта) */
+  .photo-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 40px 20px;
+    margin-bottom: 16px;
+    min-height: 280px;
+    display: none; /* СКРЫТО ПО УМОЛЧАНИЮ */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .photo-placeholder {
+    color: #999;
+    font-size: 15px;
+  }
+
+  .photo-card img.photo-preview {
+    width: 100%;
+    border-radius: 12px;
+    object-fit: cover;
   }
 
   /* Кнопка отправить */
@@ -265,7 +263,7 @@
   }
 
   .retake-btn:active {
-    background: #e5e4e0;
+    background: #dcdad8;
   }
 
   /* Кнопка выход */
@@ -352,12 +350,6 @@
   <div class="rewards-arrow">›</div>
 </div>
 
-<!-- Карточка для фото -->
-<div class="photo-card" id="photoCard">
-  <div class="photo-placeholder" id="photoPlaceholder">Здесь появится фото</div>
-  <img id="photoPreview" class="photo-preview" style="display: none;">
-</div>
-
 <!-- Кнопки действий -->
 <button class="action-button" id="cameraBtn">
   <div class="action-button-content">
@@ -386,7 +378,13 @@
 <div class="street-section">
   <label class="street-label">Название улицы:</label>
   <div class="street-sublabel">(рядом с которой обнаружен самокат)</div>
-  <input type="text" class="street-input" id="street" placeholder="Например: ул. Ленина, 15">
+  <textarea class="street-input" id="street" placeholder="Например: ул. Ленина, 15" rows="3"></textarea>
+</div>
+
+<!-- Карточка для фото (появляется только после выбора фото) -->
+<div class="photo-card" id="photoCard">
+  <div class="photo-placeholder" id="photoPlaceholder">Здесь появится фото</div>
+  <img id="photoPreview" class="photo-preview" style="display: none;">
 </div>
 
 <!-- Кнопка отправить -->
@@ -433,6 +431,8 @@ function showPreview(file) {
   currentFile = file;
   const reader = new FileReader();
   reader.onload = e => {
+    // ПОКАЗЫВАЕМ КАРТОЧКУ С ФОТО
+    photoCard.style.display = 'flex';
     photoPlaceholder.style.display = 'none';
     photoPreview.src = e.target.result;
     photoPreview.style.display = 'block';
@@ -442,7 +442,8 @@ function showPreview(file) {
 
 function clearPreview() {
   currentFile = null;
-  photoPlaceholder.style.display = 'block';
+  // СКРЫВАЕМ КАРТОЧКУ С ФОТО
+  photoCard.style.display = 'none';
   photoPreview.src = '';
   photoPreview.style.display = 'none';
   cameraIn.value = '';
@@ -494,7 +495,7 @@ sendBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('chat_id', CHAT_ID);
     fd.append('photo', currentFile);
-    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
 
     const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST', 
@@ -508,7 +509,7 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: `🛴 Новая находка\n ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();
