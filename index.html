@@ -349,7 +349,7 @@
   <div class="rewards-content">
     <img src="icons/star.png" alt="Звезда" class="rewards-star">
     <div>
-      <div class="rewards-text">100 Баллов</div>
+      <div class="rewards-text">100</div>
       <div class="rewards-subtext">Баллы = Рубли</div>
     </div>
   </div>
@@ -430,6 +430,7 @@ let currentFile = null;
 
 // ===== ИГРА =====
 let gameActive = false;
+let gameOver = false;
 let ctx, canvasW, canvasH, dpr;
 let player, bullets, enemies, particles, stars;
 let score, taps, lastTapTime, torpedoMode, torpedoTimer, torpedoCooldown;
@@ -449,21 +450,21 @@ function initCanvas() {
 function startGame() {
   if (gameActive) return;
   gameActive = true;
+  gameOver = false;
   
-  // Скрываем элементы
   cameraBtn.classList.add('hidden');
   galleryBtn.classList.add('hidden');
   streetSection.classList.add('hidden');
-  retakeBtn.classList.add('hidden');
   photoPlaceholder.style.display = 'none';
   photoPreview.style.display = 'none';
   gameCanvas.classList.remove('hidden');
   photoCard.style.display = 'block';
+  retakeBtn.classList.remove('hidden');
+  retakeBtn.textContent = 'Начать Заново';
   
   scooterTitle.textContent = 'Космо Бой 2.0';
   sendBtn.textContent = 'Закончить Игру';
   
-  // Инициализация игры
   initCanvas();
   player = { x: canvasW / 2, y: canvasH - 50, w: 30, h: 30, speed: 0 };
   bullets = [];
@@ -486,19 +487,19 @@ function startGame() {
 
 function endGame() {
   gameActive = false;
+  gameOver = false;
   cancelAnimationFrame(animFrame);
   
-  // Возвращаем элементы
   cameraBtn.classList.remove('hidden');
   galleryBtn.classList.remove('hidden');
   streetSection.classList.remove('hidden');
-  retakeBtn.classList.remove('hidden');
   gameCanvas.classList.add('hidden');
+  retakeBtn.classList.add('hidden');
+  retakeBtn.textContent = 'Переснять';
   
   scooterTitle.textContent = 'Нашёл Самокат ?';
   sendBtn.textContent = 'Отправить';
   
-  // Возвращаем карточку фото в исходное состояние
   if (currentFile) {
     photoPreview.style.display = 'block';
   } else {
@@ -507,12 +508,16 @@ function endGame() {
   }
 }
 
+function restartGame() {
+  cancelAnimationFrame(animFrame);
+  startGame();
+}
+
 function shoot() {
   const now = Date.now();
   taps.push(now);
   taps = taps.filter(t => now - t < 1500);
   
-  // Проверка на торпеды
   if (!torpedoMode && torpedoCooldown <= 0 && taps.length >= 5) {
     torpedoMode = true;
     torpedoTimer = 5000;
@@ -554,15 +559,103 @@ function explode(x, y, color) {
   }
 }
 
+function drawPlayerShip(x, y) {
+  // Корпус корабля
+  ctx.fillStyle = '#0af';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  
+  // Основной корпус (вытянутый)
+  ctx.beginPath();
+  ctx.moveTo(x, y - 18);
+  ctx.lineTo(x - 8, y - 5);
+  ctx.lineTo(x - 12, y + 10);
+  ctx.lineTo(x - 18, y + 15);
+  ctx.lineTo(x - 15, y + 18);
+  ctx.lineTo(x + 15, y + 18);
+  ctx.lineTo(x + 18, y + 15);
+  ctx.lineTo(x + 12, y + 10);
+  ctx.lineTo(x + 8, y - 5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Кабина
+  ctx.fillStyle = '#06f';
+  ctx.beginPath();
+  ctx.ellipse(x, y - 5, 5, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  
+  // Двигатели
+  ctx.fillStyle = '#f80';
+  ctx.fillRect(x - 10, y + 15, 6, 4);
+  ctx.fillRect(x + 4, y + 15, 6, 4);
+  
+  // Огонь из двигателей
+  ctx.fillStyle = '#ff0';
+  ctx.beginPath();
+  ctx.moveTo(x - 7, y + 19);
+  ctx.lineTo(x - 10, y + 25 + Math.random() * 3);
+  ctx.lineTo(x - 4, y + 19);
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.moveTo(x + 7, y + 19);
+  ctx.lineTo(x + 10, y + 25 + Math.random() * 3);
+  ctx.lineTo(x + 4, y + 19);
+  ctx.fill();
+}
+
+function drawEnemyShip(x, y, w, h) {
+  // Вражеский корабль (красный, агрессивный дизайн)
+  ctx.fillStyle = '#c33';
+  ctx.strokeStyle = '#f66';
+  ctx.lineWidth = 2;
+  
+  // Корпус
+  ctx.beginPath();
+  ctx.moveTo(x, y + h/2);
+  ctx.lineTo(x - w/2, y - h/4);
+  ctx.lineTo(x - w/3, y - h/2);
+  ctx.lineTo(x + w/3, y - h/2);
+  ctx.lineTo(x + w/2, y - h/4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Крылья
+  ctx.fillStyle = '#a22';
+  ctx.beginPath();
+  ctx.moveTo(x - w/3, y - h/4);
+  ctx.lineTo(x - w/2 - 5, y);
+  ctx.lineTo(x - w/3, y + h/4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.moveTo(x + w/3, y - h/4);
+  ctx.lineTo(x + w/2 + 5, y);
+  ctx.lineTo(x + w/3, y + h/4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Кабина
+  ctx.fillStyle = '#f00';
+  ctx.beginPath();
+  ctx.arc(x, y - h/4, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function gameLoop(now) {
   const dt = Math.min(now - lastTime, 50);
   lastTime = now;
   
-  // Очистка
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvasW, canvasH);
   
-  // Звёзды
   stars.forEach(s => {
     s.y += s.sp;
     if (s.y > canvasH) { s.y = 0; s.x = Math.random() * canvasW; }
@@ -570,7 +663,6 @@ function gameLoop(now) {
     ctx.fillRect(s.x, s.y, s.s, s.s);
   });
   
-  // Таймеры торпед
   if (torpedoMode) {
     torpedoTimer -= dt;
     if (torpedoTimer <= 0) {
@@ -582,21 +674,17 @@ function gameLoop(now) {
     torpedoCooldown -= dt;
   }
   
-  // Спавн врагов
   enemySpawnTimer -= dt;
   if (enemySpawnTimer <= 0) {
     spawnEnemy();
     enemySpawnTimer = 1200 + Math.random() * 800;
   }
   
-  // Пули
   bullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
   bullets = bullets.filter(b => b.y > -10 && b.y < canvasH + 10);
   
-  // Враги
   enemies.forEach(e => { e.y += e.vy; });
   
-  // Коллизии пуля-враг
   bullets.forEach(b => {
     enemies.forEach(e => {
       if (Math.abs(b.x - e.x) < e.w/2 + b.size && Math.abs(b.y - e.y) < e.h/2 + b.size) {
@@ -613,13 +701,10 @@ function gameLoop(now) {
   });
   enemies = enemies.filter(e => e.y < canvasH + 50 && e.hp > 0);
   
-  // Game over если враг долетел до низа
   if (enemies.some(e => e.y > canvasH - 20)) {
-    endGame();
-    return;
+    gameOver = true;
   }
   
-  // Частицы
   particles.forEach(p => {
     p.x += p.vx;
     p.y += p.vy;
@@ -629,7 +714,6 @@ function gameLoop(now) {
   });
   particles = particles.filter(p => p.life > 0);
   
-  // Рисуем частицы
   particles.forEach(p => {
     ctx.globalAlpha = p.life / 30;
     ctx.fillStyle = p.color;
@@ -637,14 +721,12 @@ function gameLoop(now) {
   });
   ctx.globalAlpha = 1;
   
-  // Рисуем пули
   bullets.forEach(b => {
     if (b.type === 'torpedo') {
       ctx.fillStyle = '#f40';
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
       ctx.fill();
-      // trail
       ctx.fillStyle = 'rgba(255,100,0,0.3)';
       ctx.beginPath();
       ctx.arc(b.x, b.y + 8, b.size * 1.5, 0, Math.PI * 2);
@@ -655,39 +737,23 @@ function gameLoop(now) {
     }
   });
   
-  // Рисуем врагов с HP баром
   enemies.forEach(e => {
-    // Тело
-    ctx.fillStyle = '#c33';
-    ctx.fillRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h);
-    ctx.strokeStyle = '#f66';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h);
+    drawEnemyShip(e.x, e.y, e.w, e.h);
     
-    // HP бар
     const barW = e.w + 4;
     const barH = 4;
     const barX = e.x - barW/2;
-    const barY = e.y - e.h/2 - 8;
+    const barY = e.y - e.h/2 - 10;
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = '#0f0';
     ctx.fillRect(barX, barY, barW * (e.hp / e.maxHp), barH);
   });
   
-  // Рисуем игрока
-  ctx.fillStyle = '#0af';
-  ctx.beginPath();
-  ctx.moveTo(player.x, player.y - 15);
-  ctx.lineTo(player.x - 15, player.y + 15);
-  ctx.lineTo(player.x + 15, player.y + 15);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  if (!gameOver) {
+    drawPlayerShip(player.x, player.y);
+  }
   
-  // HUD
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'left';
@@ -701,16 +767,25 @@ function gameLoop(now) {
     ctx.fillStyle = '#888';
     ctx.textAlign = 'center';
     ctx.fillText('Торпеды: ' + Math.ceil(torpedoCooldown/1000) + 'с', canvasW/2, 24);
-  } else {
-    ctx.fillStyle = '#0f0';
-    ctx.textAlign = 'center';
-    ctx.fillText('Тапай быстро для торпед!', canvasW/2, 24);
   }
   
-  animFrame = requestAnimationFrame(gameLoop);
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.fillStyle = '#f44';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvasW/2, canvasH/2 - 10);
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Счёт: ' + score, canvasW/2, canvasH/2 + 20);
+  }
+  
+  if (gameActive) {
+    animFrame = requestAnimationFrame(gameLoop);
+  }
 }
 
-// Управление canvas
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isDragging = false;
 
 gameCanvas.addEventListener('touchstart', e => {
@@ -725,7 +800,7 @@ gameCanvas.addEventListener('touchstart', e => {
 
 gameCanvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  if (!gameActive) return;
+  if (!gameActive || gameOver) return;
   const t = e.touches[0];
   const rect = gameCanvas.getBoundingClientRect();
   const x = t.clientX - rect.left;
@@ -741,12 +816,11 @@ gameCanvas.addEventListener('touchmove', e => {
 gameCanvas.addEventListener('touchend', e => {
   e.preventDefault();
   const dt = Date.now() - touchStartTime;
-  if (!isDragging && dt < 300 && gameActive) {
+  if (!isDragging && dt < 300 && gameActive && !gameOver) {
     shoot();
   }
 }, { passive: false });
 
-// Активация игры по 4 кликам
 let clickCount = 0;
 let clickTimer = null;
 scooterTitle.addEventListener('click', () => {
@@ -760,7 +834,6 @@ scooterTitle.addEventListener('click', () => {
   }
 });
 
-// Кнопка отправить / закончить игру
 sendBtn.addEventListener('click', async () => {
   if (gameActive) {
     endGame();
@@ -800,7 +873,7 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+        text: ` Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();
@@ -845,7 +918,13 @@ cameraBtn.addEventListener('click', () => { cameraIn.click(); });
 galleryBtn.addEventListener('click', () => { fileIn.click(); });
 cameraIn.addEventListener('change', e => { if (e.target.files[0]) showPreview(e.target.files[0]); });
 fileIn.addEventListener('change', e => { if (e.target.files[0]) showPreview(e.target.files[0]); });
-retakeBtn.addEventListener('click', clearPreview);
+retakeBtn.addEventListener('click', () => {
+  if (gameActive) {
+    restartGame();
+  } else {
+    clearPreview();
+  }
+});
 
 logoutBtn.addEventListener('click', () => {
   if (gameActive) endGame();
