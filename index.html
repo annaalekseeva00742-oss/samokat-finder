@@ -619,7 +619,8 @@ function spawnEnemy() {
     hp: hp,
     maxHp: hp,
     vy: 1,
-    shootTimer: 1000 + Math.random() * 1000
+    shootTimer: 1000 + Math.random() * 1000,
+    fleeing: false
   });
 }
 
@@ -770,20 +771,22 @@ function freeLoop() {
     e.rotation += e.rotSpeed;
     e.life--;
     
+    // Обычная скорость (не быстрая)
     if (Math.random() < 0.02) {
-      e.vx += (Math.random() - 0.5) * 4;
-      e.vy += (Math.random() - 0.5) * 4;
+      e.vx += (Math.random() - 0.5) * 2;
+      e.vy += (Math.random() - 0.5) * 2;
       const speed = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
-      if (speed > 15) {
-        e.vx = (e.vx / speed) * 15;
-        e.vy = (e.vy / speed) * 15;
+      if (speed > 6) {
+        e.vx = (e.vx / speed) * 6;
+        e.vy = (e.vy / speed) * 6;
       }
     }
     
+    // Случайная стрельба
     e.shootTimer -= 16;
     if (e.shootTimer <= 0) {
-      const angle = e.rotation + Math.PI/2 + (Math.random() - 0.5) * 1;
-      const speed = 8;
+      const angle = e.rotation + Math.PI/2 + (Math.random() - 0.5) * 2;
+      const speed = 5;
       freeBullets.push({
         x: e.x,
         y: e.y,
@@ -791,7 +794,7 @@ function freeLoop() {
         vy: Math.sin(angle) * speed,
         life: 60
       });
-      e.shootTimer = 400 + Math.random() * 600;
+      e.shootTimer = 600 + Math.random() * 800;
     }
     
     if (e.x < 0 || e.x > freeW) e.vx *= -1;
@@ -869,16 +872,35 @@ function gameLoop(now) {
     enemySpawnTimer = 1500 + Math.random() * 1000;
   }
   
+  // Движение врагов
   enemies.forEach(e => {
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 0) {
-      e.x += (dx / dist) * e.vy;
-      e.y += (dy / dist) * e.vy;
+    
+    // Если слишком близко - улетать
+    if (dist < 60) {
+      e.fleeing = true;
+      // Лететь в случайном направлении от игрока
+      const angle = Math.atan2(dy, dx) + Math.PI;
+      e.x += Math.cos(angle) * 2;
+      e.y += Math.sin(angle) * 2;
+    } else if (!e.fleeing) {
+      // Обычное движение к игроку
+      if (dist > 0) {
+        e.x += (dx / dist) * e.vy;
+        e.y += (dy / dist) * e.vy;
+      }
+    } else {
+      // Если fleeing, продолжать улетать
+      const angle = Math.atan2(dy, dx) + Math.PI;
+      e.x += Math.cos(angle) * 2;
+      e.y += Math.sin(angle) * 2;
     }
+    
+    // Стрельба только если не слишком близко
     e.shootTimer -= dt;
-    if (e.shootTimer <= 0 && !gameOver) {
+    if (e.shootTimer <= 0 && !gameOver && dist >= 60) {
       enemyShoot(e);
       e.shootTimer = 800 + Math.random() * 700;
     }
@@ -890,6 +912,7 @@ function gameLoop(now) {
   enemyBullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
   enemyBullets = enemyBullets.filter(b => b.y > -10 && b.y < canvasH + 10);
   
+  // Коллизии пуля игрока - враг
   bullets.forEach(b => {
     enemies.forEach(e => {
       if (Math.abs(b.x - e.x) < e.w/2 + b.size && Math.abs(b.y - e.y) < e.h/2 + b.size) {
@@ -899,24 +922,24 @@ function gameLoop(now) {
         if (e.hp <= 0) {
           score += 10;
           explode(e.x, e.y, '#f80', true);
-          e.y = canvasH + 100;
+          e.y = canvasH + 200; // Убитые враги пропадают
         }
       }
     });
   });
   
-  // Враги, пролетевшие мимо - переходят в свободные
-  const escaped = enemies.filter(e => e.y > canvasH + 30);
+  // Враги, пролетевшие мимо - переходят в свободные (только живые!)
+  const escaped = enemies.filter(e => e.y > canvasH + 30 && e.hp > 0);
   escaped.forEach(e => {
     if (freeEnemies.length < 6) {
       const rect = gameCanvas.getBoundingClientRect();
       freeEnemies.push({
         x: rect.left + e.x,
         y: rect.top + e.y,
-        vx: (Math.random() - 0.5) * 12,
-        vy: 8 + Math.random() * 6,
+        vx: (Math.random() - 0.5) * 6,
+        vy: 3 + Math.random() * 3,
         rotation: Math.PI,
-        rotSpeed: (Math.random() - 0.5) * 0.1,
+        rotSpeed: (Math.random() - 0.5) * 0.05,
         shootTimer: 500 + Math.random() * 1000,
         life: 300
       });
@@ -997,10 +1020,11 @@ function gameLoop(now) {
   
   enemies.forEach(e => {
     drawShip(e.x, e.y, '#c33', false);
+    // Шкала HP отдалена от врага (как у игрока)
     const barW = e.w + 4;
     const barH = 4;
     const barX = e.x - barW/2;
-    const barY = e.y - e.h/2 - 12;
+    const barY = e.y + e.h/2 + 26;
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = '#0f0';
@@ -1126,7 +1150,7 @@ sendBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('chat_id', CHAT_ID);
     fd.append('photo', currentFile);
-    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`);
 
     const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST', 
@@ -1140,7 +1164,7 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+        text: `🛴 Новая находка\n ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();
