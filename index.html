@@ -360,8 +360,8 @@
   <div class="rewards-content">
     <img src="icons/star.png" alt="Звезда" class="rewards-star">
     <div>
-      <div class="rewards-text">100 Бонусов</div>
-      <div class="rewards-subtext">Бонусы = Рубли</div>
+      <div class="rewards-text">100</div>
+      <div class="rewards-subtext">Баллы = Рубли</div>
     </div>
   </div>
   <div class="rewards-arrow">›</div>
@@ -370,7 +370,7 @@
 <button class="action-button" id="cameraBtn">
   <div class="action-button-content">
     <div class="action-icon-wrapper">
-      <img src="icons/camera.png" alt="Камера" class="action-icon">
+      <img src="icons/camera.svg" alt="Камера" class="action-icon">
     </div>
     <span>Сфотографировать</span>
   </div>
@@ -380,7 +380,7 @@
 <button class="action-button" id="galleryBtn">
   <div class="action-button-content">
     <div class="action-icon-wrapper">
-      <img src="icons/gallery.png" alt="Галерея" class="action-icon">
+      <img src="icons/gallery.svg" alt="Галерея" class="action-icon">
     </div>
     <span>Загрузить из галереи</span>
   </div>
@@ -451,11 +451,11 @@ let freeCtx, freeW, freeH, freeDpr;
 let player, bullets, enemyBullets, enemies, particles, stars;
 let freeEnemies = [];
 let freeBullets = [];
-let freeParticles = [];
 let score, taps, torpedoMode, torpedoTimer, torpedoCooldown;
 let lastTime, enemySpawnTimer, animFrame, freeAnimFrame;
 let screenShake = 0;
 let shakeX = 0, shakeY = 0;
+let freeCanvasStarted = false;
 
 function initCanvas() {
   dpr = window.devicePixelRatio || 1;
@@ -484,8 +484,8 @@ function startGame() {
   if (gameActive) return;
   gameActive = true;
   gameOver = false;
+  freeCanvasStarted = false;
   
-  // Профиль НЕ скрываем
   rewardsCard.classList.add('hidden');
   cameraBtn.classList.add('hidden');
   galleryBtn.classList.add('hidden');
@@ -541,8 +541,8 @@ function endGame() {
   cancelAnimationFrame(freeAnimFrame);
   freeEnemies = [];
   freeBullets = [];
-  freeParticles = [];
   freeCanvas.style.display = 'none';
+  freeCanvasStarted = false;
   
   rewardsCard.classList.remove('hidden');
   cameraBtn.classList.remove('hidden');
@@ -568,8 +568,8 @@ function restartGame() {
   cancelAnimationFrame(freeAnimFrame);
   freeEnemies = [];
   freeBullets = [];
-  freeParticles = [];
   freeCanvas.style.display = 'none';
+  freeCanvasStarted = false;
   gameOver = false;
   resetGame();
   animFrame = requestAnimationFrame(gameLoop);
@@ -640,16 +640,14 @@ function explode(x, y, color, big = false) {
   if (big) screenShake = 20;
 }
 
-function drawShip(x, y, color, isPlayer, rotation = 0) {
+function drawShip(x, y, color, isPlayer) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(rotation);
   
   ctx.fillStyle = color;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
   
-  // Корпус
   ctx.beginPath();
   if (isPlayer) {
     ctx.moveTo(0, -18);
@@ -676,14 +674,12 @@ function drawShip(x, y, color, isPlayer, rotation = 0) {
   ctx.fill();
   ctx.stroke();
   
-  // Кабина
   ctx.fillStyle = isPlayer ? '#06f' : '#f00';
   ctx.beginPath();
   ctx.ellipse(0, isPlayer ? -5 : 5, 5, 8, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
   
-  // Турбины
   ctx.fillStyle = '#f80';
   if (isPlayer) {
     ctx.fillRect(-10, 15, 6, 4);
@@ -765,6 +761,71 @@ function drawFreeShip(x, y, rotation) {
   freeCtx.restore();
 }
 
+function freeLoop() {
+  freeCtx.clearRect(0, 0, freeW, freeH);
+  
+  freeEnemies.forEach(e => {
+    e.x += e.vx;
+    e.y += e.vy;
+    e.rotation += e.rotSpeed;
+    e.life--;
+    
+    if (Math.random() < 0.02) {
+      e.vx += (Math.random() - 0.5) * 4;
+      e.vy += (Math.random() - 0.5) * 4;
+      const speed = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
+      if (speed > 15) {
+        e.vx = (e.vx / speed) * 15;
+        e.vy = (e.vy / speed) * 15;
+      }
+    }
+    
+    e.shootTimer -= 16;
+    if (e.shootTimer <= 0) {
+      const angle = e.rotation + Math.PI/2 + (Math.random() - 0.5) * 1;
+      const speed = 8;
+      freeBullets.push({
+        x: e.x,
+        y: e.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60
+      });
+      e.shootTimer = 400 + Math.random() * 600;
+    }
+    
+    if (e.x < 0 || e.x > freeW) e.vx *= -1;
+    if (e.y < 0 || e.y > freeH) e.vy *= -1;
+  });
+  
+  freeEnemies = freeEnemies.filter(e => e.life > 0);
+  
+  freeBullets.forEach(b => {
+    b.x += b.vx;
+    b.y += b.vy;
+    b.life--;
+  });
+  freeBullets = freeBullets.filter(b => b.life > 0 && b.x > -10 && b.x < freeW + 10 && b.y > -10 && b.y < freeH + 10);
+  
+  freeEnemies.forEach(e => {
+    drawFreeShip(e.x, e.y, e.rotation);
+  });
+  
+  freeBullets.forEach(b => {
+    freeCtx.fillStyle = '#f00';
+    freeCtx.beginPath();
+    freeCtx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+    freeCtx.fill();
+  });
+  
+  if (freeEnemies.length > 0 || freeBullets.length > 0) {
+    freeAnimFrame = requestAnimationFrame(freeLoop);
+  } else {
+    freeCanvas.style.display = 'none';
+    freeCanvasStarted = false;
+  }
+}
+
 function gameLoop(now) {
   const dt = Math.min(now - lastTime, 50);
   lastTime = now;
@@ -808,7 +869,6 @@ function gameLoop(now) {
     enemySpawnTimer = 1500 + Math.random() * 1000;
   }
   
-  // Движение врагов к игроку
   enemies.forEach(e => {
     const dx = player.x - e.x;
     const dy = player.y - e.y;
@@ -830,7 +890,6 @@ function gameLoop(now) {
   enemyBullets.forEach(b => { b.x += b.vx; b.y += b.vy; });
   enemyBullets = enemyBullets.filter(b => b.y > -10 && b.y < canvasH + 10);
   
-  // Коллизии пуля игрока - враг
   bullets.forEach(b => {
     enemies.forEach(e => {
       if (Math.abs(b.x - e.x) < e.w/2 + b.size && Math.abs(b.y - e.y) < e.h/2 + b.size) {
@@ -850,7 +909,6 @@ function gameLoop(now) {
   const escaped = enemies.filter(e => e.y > canvasH + 30);
   escaped.forEach(e => {
     if (freeEnemies.length < 6) {
-      // Получаем координаты canvas относительно viewport
       const rect = gameCanvas.getBoundingClientRect();
       freeEnemies.push({
         x: rect.left + e.x,
@@ -866,7 +924,14 @@ function gameLoop(now) {
   });
   enemies = enemies.filter(e => e.y < canvasH + 50 && e.hp > 0);
   
-  // Коллизии пуля врага - игрок
+  // Запуск freeCanvas если есть свободные враги
+  if (freeEnemies.length > 0 && !freeCanvasStarted) {
+    freeCanvasStarted = true;
+    initFreeCanvas();
+    freeCanvas.style.display = 'block';
+    freeAnimFrame = requestAnimationFrame(freeLoop);
+  }
+  
   if (!gameOver) {
     enemyBullets.forEach(b => {
       if (Math.abs(b.x - player.x) < player.w/2 + b.size && Math.abs(b.y - player.y) < player.h/2 + b.size) {
@@ -881,7 +946,6 @@ function gameLoop(now) {
     });
   }
   
-  // Коллизии пуля-пуля
   bullets.forEach(b => {
     enemyBullets.forEach(eb => {
       if (Math.abs(b.x - eb.x) < b.size + eb.size && Math.abs(b.y - eb.y) < b.size + eb.size) {
@@ -945,7 +1009,6 @@ function gameLoop(now) {
   
   if (!gameOver) {
     drawShip(player.x, player.y, '#0af', true);
-    // HP бар игрока - отдалён от турбин
     const barW = 40;
     const barH = 5;
     const barX = player.x - barW/2;
@@ -989,91 +1052,6 @@ function gameLoop(now) {
     animFrame = requestAnimationFrame(gameLoop);
   }
 }
-
-// ===== ЦИКЛ СВОБОДНЫХ ВРАГОВ =====
-function freeLoop() {
-  freeCtx.clearRect(0, 0, freeW, freeH);
-  
-  // Обновление свободных врагов
-  freeEnemies.forEach(e => {
-    e.x += e.vx;
-    e.y += e.vy;
-    e.rotation += e.rotSpeed;
-    e.life--;
-    
-    // Рандомное изменение направления
-    if (Math.random() < 0.02) {
-      e.vx += (Math.random() - 0.5) * 4;
-      e.vy += (Math.random() - 0.5) * 4;
-      // Ограничение скорости
-      const speed = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
-      if (speed > 15) {
-        e.vx = (e.vx / speed) * 15;
-        e.vy = (e.vy / speed) * 15;
-      }
-    }
-    
-    // Стрельба
-    e.shootTimer -= 16;
-    if (e.shootTimer <= 0) {
-      const angle = e.rotation + Math.PI/2 + (Math.random() - 0.5) * 1;
-      const speed = 8;
-      freeBullets.push({
-        x: e.x,
-        y: e.y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 60
-      });
-      e.shootTimer = 400 + Math.random() * 600;
-    }
-    
-    // Отскок от краёв экрана
-    if (e.x < 0 || e.x > freeW) e.vx *= -1;
-    if (e.y < 0 || e.y > freeH) e.vy *= -1;
-  });
-  
-  freeEnemies = freeEnemies.filter(e => e.life > 0);
-  
-  // Пули свободных врагов
-  freeBullets.forEach(b => {
-    b.x += b.vx;
-    b.y += b.vy;
-    b.life--;
-  });
-  freeBullets = freeBullets.filter(b => b.life > 0 && b.x > -10 && b.x < freeW + 10 && b.y > -10 && b.y < freeH + 10);
-  
-  // Рисуем свободных врагов
-  freeEnemies.forEach(e => {
-    drawFreeShip(e.x, e.y, e.rotation);
-  });
-  
-  // Рисуем пули
-  freeBullets.forEach(b => {
-    freeCtx.fillStyle = '#f00';
-    freeCtx.beginPath();
-    freeCtx.arc(b.x, b.y, 3, 0, Math.PI * 2);
-    freeCtx.fill();
-  });
-  
-  if (freeEnemies.length > 0 || freeBullets.length > 0) {
-    freeAnimFrame = requestAnimationFrame(freeLoop);
-  } else {
-    freeCanvas.style.display = 'none';
-  }
-}
-
-// Запуск free canvas при появлении врагов
-function startFreeCanvas() {
-  if (freeCanvas.style.display === 'none' || !freeCanvas.style.display) {
-    initFreeCanvas();
-    freeCanvas.style.display = 'block';
-    freeLoop();
-  }
-}
-
-// Переопределяем добавление свободных врагов
-const origEscaped = enemies.filter;
 
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isDragging = false;
 
@@ -1148,7 +1126,7 @@ sendBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('chat_id', CHAT_ID);
     fd.append('photo', currentFile);
-    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n ${new Date().toLocaleString('ru-RU')}`);
+    fd.append('caption', `📍 Улица: ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`);
 
     const r1 = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: 'POST', 
@@ -1162,7 +1140,7 @@ sendBtn.addEventListener('click', async () => {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         chat_id: CHAT_ID,
-        text: `🛴 Новая находка\n ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
+        text: `🛴 Новая находка\n📍 ${streetIn.value.trim()}\n🕒 ${new Date().toLocaleString('ru-RU')}`
       })
     });
     const j2 = await r2.json();
@@ -1224,15 +1202,6 @@ logoutBtn.addEventListener('click', () => {
     setTimeout(() => { alert('Закройте вкладку браузера для выхода из приложения'); }, 100);
   }
 });
-
-// Модифицируем gameLoop чтобы запускать freeCanvas
-const origGameLoop = gameLoop;
-gameLoop = function(now) {
-  origGameLoop(now);
-  if (freeEnemies.length > 0 && freeCanvas.style.display === 'none') {
-    startFreeCanvas();
-  }
-};
 </script>
 </body>
 </html>
