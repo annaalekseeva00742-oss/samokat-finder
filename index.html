@@ -183,8 +183,8 @@
     background: #F5F5F5;
     outline: none;
     transition: all 0.2s;
-    min-height: 96px; /* Высота поля */
-    resize: none; /* Запрет на растягивание пользователем */
+    min-height: 96px;
+    resize: none;
     display: block;
   }
 
@@ -195,14 +195,13 @@
 
   .street-input::placeholder {
     color: #999;
-    /* В textarea placeholder автоматически прижимается к верху */
   }
 
   /* Карточка для фото (изначально скрыта) */
   .photo-card {
     background: #FFFFFF;
     border-radius: 16px;
-    padding: 40px 20px;
+    padding: 20px; /* <-- ИЗМЕНЕНО: теперь 20px со всех сторон */
     margin-bottom: 16px;
     min-height: 280px;
     display: none; /* СКРЫТО ПО УМОЛЧАНИЮ */
